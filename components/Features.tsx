@@ -5,8 +5,8 @@ const Features: React.FC = () => {
   // Reservation Stages: 'intro' | 'form' | 'countSelection' | 'confirm' | 'success' | 'finalGuide' | 'lookup' | 'checkLoading' | 'result' | 'duplicateError'
   const [reserveStage, setReserveStage] = useState<'intro' | 'form' | 'countSelection' | 'confirm' | 'success' | 'finalGuide' | 'lookup' | 'checkLoading' | 'result' | 'duplicateError'>('intro');
   
-  // Location Card View State: 'map' | 'parking'
-  const [showParking, setShowParking] = useState(false);
+  // Info/Location Card Stage: 'info' | 'map' | 'parking'
+  const [infoStage, setInfoStage] = useState<'info' | 'map' | 'parking'>('info');
 
   // States for animation and logic
   const [isTearing, setIsTearing] = useState(false);
@@ -547,7 +547,7 @@ const Features: React.FC = () => {
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-white/70">연락처 뒷번호 4자리</label>
-                        <input type="tel" maxLength={4} placeholder="1234" value={lookupData.phone} onChange={(e) => setLookupData(prev => ({...prev, phone: e.target.value.replace(/[^0-9]/g, '')}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm text-white tracking-widest focus:outline-none placeholder-gray-500" />
+                        <input type="tel" maxLength={4} placeholder="1234" value={lookupData.phone} onChange={(e) => setLookupData(prev => ({...prev, phone: e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm text-white tracking-widest focus:outline-none placeholder-gray-500" />
                     </div>
                 </div>
                 <div className="bg-white/5 rounded-xl p-4 flex gap-3">
@@ -629,7 +629,7 @@ const Features: React.FC = () => {
                     <div className="flex flex-col items-center gap-6 py-10 text-center">
                         <div className="w-48 h-48 flex items-center justify-center">
                             <img 
-                                src="https://i.postimg.cc/3NMXzBWp/Gemini-Generated-Image-qs0yzrqs0yzrqs0y-removebg-preview.png" 
+                                src="https://i.postimg.cc/SRKS39FK/Gemini-Generated-Image-tpmw1stpmw1stpmw-removebg-preview.png" 
                                 alt="Pending Verification" 
                                 className="w-full h-full object-contain" 
                             />
@@ -649,12 +649,78 @@ const Features: React.FC = () => {
           </div>
         </div>
 
-        {/* Location Card */}
-        <div id="location-card" className="order-2 md:order-1 group relative bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-[40px] p-10 overflow-hidden hover:border-white/20 transition-all duration-500 min-h-[500px] grid grid-cols-1 grid-rows-1 shadow-xl">
-          {/* Map View */}
-          <div className={`col-start-1 row-start-1 flex flex-col h-full w-full transition-all duration-500 ease-in-out ${showParking ? 'opacity-0 -translate-x-10 pointer-events-none' : 'opacity-100 translate-x-0 z-10'}`}>
+        {/* Card 2: Combined Info & Location Hub (Info -> Map -> Parking) */}
+        {/* UPDATED: min-h increased to 640px to match reserve-card and provide more space */}
+        <div id="location-card" className="order-2 md:order-1 group relative bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-[40px] p-10 overflow-hidden hover:border-white/20 transition-all duration-500 min-h-[640px] flex flex-col shadow-xl">
+           
+           {/* Stage 1: Info Details */}
+           {/* UPDATED: Added overflow-y-auto to allow scrolling on small screens */}
+           <div className={`absolute inset-0 top-0 p-10 flex flex-col transition-all duration-500 overflow-y-auto custom-scrollbar ${infoStage === 'info' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none -translate-x-10'}`}>
+                {/* Header - Matches Reserve Card Style */}
+                <div className="relative z-10 mb-4 flex justify-between items-start min-h-[48px] shrink-0">
+                    <div className="flex-1 pr-4">
+                        <h3 className="text-2xl font-bold text-[#D8B4FE] mb-1">공연 정보</h3>
+                        <p className="text-sm font-medium text-gray-400">밴드 공연 | 180분</p>
+                    </div>
+                </div>
+
+                {/* Center Content */}
+                <div className="flex-1 flex flex-col items-center justify-center w-full min-h-0">
+                    {/* Poster Image */}
+                    {/* UPDATED: Reduced margins and adjusted max-height for mobile to prevent overlap */}
+                    <div className="relative w-full flex-1 flex items-center justify-center mb-4">
+                        <img 
+                            src="https://i.postimg.cc/1zmJHPjF/Screenshot-20260120-154217-Gallery.jpg" 
+                            alt="Performance Poster"
+                            className="max-h-[160px] md:max-h-[220px] w-auto object-contain rounded-lg shadow-2xl"
+                        />
+                    </div>
+                    
+                    {/* Detail Table */}
+                    {/* UPDATED: Reduced bottom margin */}
+                    <div className="w-full shrink-0 mb-4">
+                        <h4 className="text-base font-bold text-white mb-3">관람 정보</h4>
+                        <div className="space-y-2 border-t border-white/10 pt-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-500 font-medium w-20 shrink-0">장소</span>
+                                <span className="text-sm text-white font-medium text-right">펄스 라이브홀</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-500 font-medium w-20 shrink-0">공연시간</span>
+                                <span className="text-sm text-white font-medium text-right"> 16:00 ~ 19:00</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-500 font-medium w-20 shrink-0">관람등급</span>
+                                <span className="text-sm text-white font-medium text-right">전체 관람가</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Button - Go to Map */}
+                <div className="mt-auto w-full shrink-0">
+                    <button 
+                        onClick={() => setInfoStage('map')}
+                        className="w-full py-4 bg-[#D8B4FE]/80 backdrop-blur-md text-[#1A1A1A] text-sm font-bold rounded-xl hover:bg-[#D8B4FE] transition-all shadow-lg active:scale-[0.98]"
+                    >
+                        찾아오시는 길
+                    </button>
+                </div>
+           </div>
+
+           {/* Stage 2: Map View */}
+           <div className={`absolute inset-0 top-0 p-10 flex flex-col h-full w-full transition-all duration-500 ease-in-out ${infoStage === 'map' ? 'opacity-100 translate-x-0 z-10' : (infoStage === 'info' ? 'opacity-0 translate-x-10 pointer-events-none' : 'opacity-0 -translate-x-10 pointer-events-none')}`}>
+              <div className="flex items-center justify-between mb-4 shrink-0">
+                  <h3 className="text-xl font-bold text-[#D8B4FE]">찾아오시는 길</h3>
+                  <button 
+                      onClick={() => setInfoStage('info')}
+                      className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors shrink-0"
+                  >
+                      <ArrowLeft className="w-5 h-5 text-white" />
+                  </button>
+              </div>
+              
               <div className="relative z-10 shrink-0">
-                <h3 className="text-xl font-bold text-[#D8B4FE] mb-4">찾아오시는 길 - 펄스 라이브홀</h3>
                 <p className="text-sm text-white/80 leading-relaxed w-full font-medium whitespace-pre-wrap">
                   {`도로명 주소 : 서울특별시 서초구 주흥길 12 B1\n지번 주소 : 서울특별시 서초구 반포동 741 B1\n강남 교보타워 사거리 인근,\n9호선 신논현역 1번출구 도보 350m`}
                 </p>
@@ -664,7 +730,7 @@ const Features: React.FC = () => {
               </div>
               <div className="w-full shrink-0">
                   <button 
-                      onClick={() => setShowParking(true)}
+                      onClick={() => setInfoStage('parking')}
                       className="w-full py-4 bg-[#D8B4FE]/80 backdrop-blur-md text-[#1A1A1A] text-sm font-bold rounded-xl hover:bg-[#D8B4FE] transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.98]"
                   >
                       주차 위치 확인하기
@@ -672,12 +738,12 @@ const Features: React.FC = () => {
               </div>
           </div>
 
-          {/* Parking View */}
-          <div className={`col-start-1 row-start-1 flex flex-col h-full w-full transition-all duration-500 ease-in-out ${showParking ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-10 pointer-events-none'}`}>
+          {/* Stage 3: Parking View */}
+          <div className={`absolute inset-0 top-0 p-10 flex flex-col h-full w-full transition-all duration-500 ease-in-out ${infoStage === 'parking' ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-10 pointer-events-none'}`}>
               <div className="flex items-center justify-between mb-6 shrink-0">
                   <h3 className="text-xl font-bold text-[#D8B4FE]">공영 주차장 안내</h3>
                   <button 
-                      onClick={() => setShowParking(false)}
+                      onClick={() => setInfoStage('map')}
                       className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors shrink-0"
                   >
                       <ArrowLeft className="w-5 h-5 text-white" />
@@ -715,7 +781,7 @@ const Features: React.FC = () => {
               </div>
               
               <div className="mt-6 w-full shrink-0">
-                   <button onClick={() => setShowParking(false)} className="w-full py-4 bg-[#D8B4FE]/80 backdrop-blur-md text-[#1A1A1A] text-sm font-bold rounded-xl hover:bg-[#D8B4FE] transition-all shadow-lg active:scale-[0.98]">
+                   <button onClick={() => setInfoStage('info')} className="w-full py-4 bg-[#D8B4FE]/80 backdrop-blur-md text-[#1A1A1A] text-sm font-bold rounded-xl hover:bg-[#D8B4FE] transition-all shadow-lg active:scale-[0.98]">
                       돌아가기
                    </button>
               </div>
@@ -723,7 +789,7 @@ const Features: React.FC = () => {
         </div>
 
         {/* Members Card - UPDATED ANIMATION */}
-        <div id="members-card" className="order-3 group relative bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-[40px] p-10 overflow-hidden hover:border-white/20 transition-all duration-500 min-h-[500px] flex flex-col shadow-xl">
+        <div id="members-card" className="order-4 md:order-4 group relative bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-[40px] p-10 overflow-hidden hover:border-white/20 transition-all duration-500 min-h-[500px] flex flex-col shadow-xl">
           <div className="relative z-10 mb-8">
             <h3 className="text-xl font-bold text-[#D8B4FE] mb-6">밴드 구성원</h3>
             <div className="space-y-2 text-sm text-white/80 font-medium leading-relaxed">
@@ -741,7 +807,7 @@ const Features: React.FC = () => {
           <div className="flex-1 flex items-center justify-center select-none relative w-full">
               <div className="relative w-full h-full max-h-[280px] flex items-center justify-center">
                   <img 
-                      src="https://i.postimg.cc/rFHrHjbM/Gemini-Generated-Image-h1kgdih1kgdih1kg-removebg-preview.png" 
+                      src="https://i.postimg.cc/pLYdHxfQ/Gemini-Generated-Image-2q1dz22q1dz22q1d-removebg-preview.png" 
                       alt="Band Illustration" 
                       className="relative z-10 w-full h-full object-contain drop-shadow-sm opacity-90 animate-float-slow"
                   />
@@ -752,7 +818,7 @@ const Features: React.FC = () => {
         </div>
 
         {/* Playlist Card - UPDATED COLOR & ANIMATION */}
-        <div id="playlist-card" className="order-4 group relative bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-[40px] p-10 overflow-hidden hover:border-white/20 transition-all duration-500 min-h-[500px] flex flex-col shadow-xl">
+        <div id="playlist-card" className="order-5 md:order-5 group relative bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-[40px] p-10 overflow-hidden hover:border-white/20 transition-all duration-500 min-h-[500px] flex flex-col shadow-xl">
           <div className="relative z-10 w-full mb-10">
             <h3 className="text-xl font-bold text-[#D8B4FE] mb-8">플레이 리스트</h3>
             <div className="flex flex-col gap-8 text-sm text-white/80 font-medium leading-relaxed">
@@ -789,7 +855,7 @@ const Features: React.FC = () => {
           {/* PLAYER WIDGET AREA - REPLACED WITH IMAGE */}
           <div className="flex-1 flex items-center justify-center select-none relative w-full">
               <img 
-                  src="https://i.postimg.cc/g02b6yzv/Gemini-Generated-Image-jg53hojg53hojg53-removebg-preview.png" 
+                  src="https://i.postimg.cc/sXR1Wcp6/Gemini-Generated-Image-4pkv444pkv444pkv-removebg-preview.png" 
                   alt="Playlist Illustration" 
                   className="w-full h-full object-contain max-h-[280px] drop-shadow-sm opacity-90 animate-float-slow"
               />

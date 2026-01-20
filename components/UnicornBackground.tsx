@@ -59,10 +59,10 @@ const UnicornBackground: React.FC<UnicornBackgroundProps> = ({
             
             {/* Header Section replaced with simple text */}
             <div className="flex flex-col items-center justify-center px-1 gap-1">
-                 <span className="text-sm font-bold tracking-widest text-white/60 uppercase">
+                 <span className="text-[10px] md:text-xs font-medium tracking-widest text-[#D8B4FE]/80 uppercase">
                     26.02.14 SAT | 16:00
                  </span>
-                 <span className="text-sm font-bold tracking-widest text-white/60 uppercase">
+                 <span className="text-[10px] md:text-xs font-medium tracking-widest text-[#D8B4FE]/80 uppercase">
                     赤玉春 VOL.2
                  </span>
             </div>
