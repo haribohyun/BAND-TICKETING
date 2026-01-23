@@ -22,7 +22,7 @@ const Features: React.FC = () => {
   const [isListExpanded, setIsListExpanded] = useState(false);
 
   // Progressive Form State (Toss Style)
-  const [formStep, setFormStep] = useState(0); // 0: Name, 1: Phone, 2: Referral (Wheel)
+  const [formStep, setFormStep] = useState(0); // 0: Inputs (Name+Phone), 2: Referral (Wheel) - Skipped 1 for unified view
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const phoneInputRef = useRef<HTMLInputElement>(null);
@@ -56,8 +56,8 @@ const Features: React.FC = () => {
     '최영훈', '한지성', '지인 없음/기타'
   ];
   
-  // Create looped members for infinite scroll effect (3 sets: Prev, Current, Next)
-  const LOOP_MEMBERS = [...MEMBERS, ...MEMBERS, ...MEMBERS];
+  // Create looped members for infinite scroll effect (5 sets to minimize jump glitches and provide smoother scroll)
+  const LOOP_MEMBERS = [...MEMBERS, ...MEMBERS, ...MEMBERS, ...MEMBERS, ...MEMBERS];
 
   // Validation Logic
   const isNameValid = /^[가-힣]+$/.test(formData.name);
@@ -77,26 +77,35 @@ const Features: React.FC = () => {
     return () => { clearInterval(playlistInterval); };
   }, []);
 
-  // Auto-scroll and Focus effect for Progressive Form
+  // Auto-scroll logic (Focus restored for user convenience)
   useEffect(() => {
     if (reserveStage === 'form') {
+        // Scroll the card to the top of the viewport for better visibility
+        // This ensures the input area is visible even when keyboard opens
+        if (window.innerWidth < 768) {
+            const card = document.getElementById('reserve-card');
+            if (card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
         if (formStep === 0) {
-            nameInputRef.current?.focus();
-        } else if (formStep === 1) {
+            // Restore Name Focus with preventScroll: true
+            // This prevents the browser from aggressively scrolling again and causing "bouncing"
             setTimeout(() => {
-                phoneInputRef.current?.focus();
-            }, 300);
+                nameInputRef.current?.focus({ preventScroll: true });
+            }, 600); // 600ms delay to ensure transition completes
         } else if (formStep === 2) {
              // Initialize Referral if empty
              const currentReferral = formData.referral || MEMBERS[0];
              if (!formData.referral) {
                  handleInputChange('referral', currentReferral);
              }
-             // Ensure wheel is scrolled to middle set (Set 2)
+             // Ensure wheel is scrolled to middle set (Set 2 of 5, which is index 2)
              setTimeout(() => {
                  if (wheelRef.current) {
                      const idx = MEMBERS.indexOf(currentReferral);
-                     const targetIndex = idx + MEMBERS.length; // Start in the middle set
+                     const targetIndex = idx + (MEMBERS.length * 2); // Start in the middle set (Set 2)
                      wheelRef.current.scrollTo({ top: targetIndex * 50, behavior: 'instant' });
                      setWheelIndex(idx);
                  }
@@ -105,23 +114,28 @@ const Features: React.FC = () => {
     }
   }, [formStep, reserveStage]);
 
-  // Wheel Scroll Handler with Infinite Wrap Logic
+  // Wheel Scroll Handler with Infinite Wrap Logic (Optimized for 5 sets)
   const handleWheelScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const itemHeight = 50;
       const totalCount = MEMBERS.length;
       const setHeight = totalCount * itemHeight;
       let scrollTop = e.currentTarget.scrollTop;
       
-      // Infinite Scroll Wrapping
-      // If scrolled into Set 1 (top set), jump to Set 2
-      if (scrollTop < setHeight) {
-          scrollTop += setHeight;
-          e.currentTarget.scrollTo({ top: scrollTop, behavior: 'instant' });
+      // Infinite Scroll Wrapping logic for 5 sets.
+      // We aim to keep the user in Set 2 (the middle set).
+      // Set 0: [0, setHeight)
+      // Set 1: [setHeight, 2*setHeight)
+      // Set 2: [2*setHeight, 3*setHeight) <- Target
+      // Set 3: [3*setHeight, 4*setHeight)
+      // Set 4: [4*setHeight, 5*setHeight)
+
+      // If user scrolls up into Set 1 (or 0), jump forward to Set 2
+      if (scrollTop < setHeight * 1.5) {
+          e.currentTarget.scrollTo({ top: scrollTop + setHeight, behavior: 'instant' });
       } 
-      // If scrolled into Set 3 (bottom set), jump back to Set 2
-      else if (scrollTop >= setHeight * 2) {
-          scrollTop -= setHeight;
-          e.currentTarget.scrollTo({ top: scrollTop, behavior: 'instant' });
+      // If user scrolls down into Set 3 (or 4), jump backward to Set 2
+      else if (scrollTop > setHeight * 3.5) {
+          e.currentTarget.scrollTo({ top: scrollTop - setHeight, behavior: 'instant' });
       }
       
       const index = Math.round(scrollTop / itemHeight);
@@ -234,7 +248,7 @@ const Features: React.FC = () => {
 
   const handleNameSubmit = () => {
     if (isNameValid) {
-        setFormStep(1);
+        phoneInputRef.current?.focus(); // Focus next input directly
     }
   };
 
@@ -309,9 +323,9 @@ const Features: React.FC = () => {
       if (reserveStage === 'countSelection') {
           setReserveStage('form');
       } else if (reserveStage === 'form') {
-          // If in wheel stage (step 2), go back to step 1
+          // If in wheel stage (step 2), go back to inputs (step 0)
           if (formStep === 2) {
-              setFormStep(1);
+              setFormStep(0);
           } else {
               setFormData({
                   name: '',
@@ -331,7 +345,7 @@ const Features: React.FC = () => {
     <div className="w-full py-24 px-6 md:px-12 lg:px-24 relative z-10 pointer-events-auto">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
         
-        {/* Card 1: Ticket Reservation / Lookup */}
+        {/* Card 1: Ticket Reservation / Lookup - Height restored to prevent overlap */}
         <div id="reserve-card" className="order-1 md:order-2 group relative bg-[#FFFEFA]/90 backdrop-blur-md border border-stone-200 rounded-[40px] p-10 overflow-hidden hover:border-stone-300 transition-all duration-500 min-h-[640px] flex flex-col shadow-xl">
           
           {/* Header Section */}
@@ -420,67 +434,58 @@ const Features: React.FC = () => {
                 >
                     {/* Slide 1: Inputs */}
                     <div className="w-1/2 px-1 flex flex-col h-full overflow-y-auto custom-scrollbar">
-                         <div className="flex flex-col gap-8 flex-1">
+                         <div className="flex flex-col gap-6 flex-1">
                             {/* 1. Name Input */}
-                            <div 
-                                onClick={() => formStep > 0 && setFormStep(0)}
-                                className={`transition-all duration-500 ${formStep > 0 ? 'opacity-40 grayscale cursor-pointer' : 'opacity-100'}`}
-                            >
-                                <label className="text-sm font-bold text-stone-900 flex items-center gap-2 mb-2">
-                                    입금자 성함
+                            <div className="space-y-1.5 transition-all duration-500">
+                                <label className="text-xs font-semibold text-stone-500">
+                                    예매자 성함
                                 </label>
                                 <input 
                                     ref={nameInputRef}
                                     type="text" 
-                                    placeholder="이름을 입력해주세요" 
+                                    placeholder="홍길동" 
                                     value={formData.name} 
                                     onChange={(e) => handleInputChange('name', e.target.value)}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && isNameValid) handleNameSubmit();
                                     }}
                                     enterKeyHint="next"
-                                    readOnly={formStep > 0}
-                                    className={`w-full bg-transparent border-b-2 ${formData.name && !isNameValid ? 'border-red-400' : (formStep > 0 ? 'border-stone-200' : 'border-stone-900')} py-4 text-2xl font-bold text-stone-900 focus:outline-none focus:border-stone-900 transition-all placeholder-stone-300 rounded-none`} 
+                                    className={`w-full bg-stone-50 border rounded-xl px-4 py-4 text-sm text-stone-900 focus:outline-none placeholder-stone-400 ${formData.name && !isNameValid ? 'border-red-400' : 'border-stone-200'}`} 
                                 />
                                 {formData.name && !isNameValid && formStep === 0 && (
-                                    <p className="text-xs text-red-500 font-medium pl-1 mt-2">한글 성함만 입력 가능합니다</p>
+                                    <p className="text-xs text-red-500 font-medium pl-1 mt-1">한글 성함만 입력 가능합니다</p>
                                 )}
                             </div>
 
-                            {/* 2. Phone Input */}
-                            {formStep >= 1 && (
-                                <div 
-                                    onClick={() => formStep > 1 && setFormStep(1)}
-                                    className={`transition-all duration-500 animate-fade-in-up ${formStep > 1 ? 'opacity-40 grayscale cursor-pointer' : 'opacity-100'}`}
-                                >
-                                    <label className="text-sm font-bold text-stone-900 flex items-center gap-2 mb-2">
-                                        연락처 뒷번호 4자리
-                                    </label>
-                                    <input 
-                                        ref={phoneInputRef}
-                                        type="tel" 
-                                        maxLength={4} 
-                                        placeholder="1234" 
-                                        value={formData.phone} 
-                                        onChange={(e) => handleInputChange('phone', e.target.value.replace(/[^0-9]/g, ''))} 
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && isPhoneValid) handlePhoneSubmit();
-                                        }}
-                                        enterKeyHint="next"
-                                        readOnly={formStep > 1}
-                                        className="w-full bg-transparent border-b-2 border-stone-900 py-4 text-3xl font-bold text-stone-900 tracking-[0.5em] focus:outline-none focus:border-stone-900 placeholder-stone-300 rounded-none" 
-                                    />
-                                </div>
-                            )}
+                            {/* 2. Phone Input - Always Visible */}
+                            <div className="space-y-1.5 transition-all duration-500">
+                                <label className="text-xs font-semibold text-stone-500">
+                                    연락처 뒷번호 4자리
+                                </label>
+                                <input 
+                                    ref={phoneInputRef}
+                                    type="tel" 
+                                    maxLength={4} 
+                                    placeholder="1234" 
+                                    value={formData.phone} 
+                                    onChange={(e) => handleInputChange('phone', e.target.value.replace(/[^0-9]/g, ''))} 
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && isPhoneValid) handlePhoneSubmit();
+                                    }}
+                                    enterKeyHint="next"
+                                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-4 text-sm text-stone-900 tracking-widest focus:outline-none placeholder-stone-400" 
+                                    
+                                />
+                            </div>
                          </div>
                          
-                         {/* Next Button for Slide 1 */}
-                         {formStep === 1 && (
+                         {/* Next Button for Slide 1 - Always visible in this step */}
+                         {formStep < 2 && (
                             <div className="mt-8 w-full bg-[#FFFEFA]/95 pt-4">
                                 <button 
-                                    disabled={!isFormValid || isSubmitting} 
+                                    disabled={!(isNameValid && isPhoneValid) || isSubmitting} 
                                     onClick={() => setFormStep(2)} 
-                                    className={`w-full py-4 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg ${isFormValid && !isSubmitting ? 'bg-stone-900 text-[#F7F5F0] hover:bg-stone-800 active:scale-[0.98]' : 'bg-stone-200 text-stone-400 cursor-not-allowed'}`}
+                                    className={`w-full py-4 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg ${(isNameValid && isPhoneValid) && !isSubmitting ? 'bg-stone-900 text-[#F7F5F0] hover:bg-stone-800 active:scale-[0.98]' : 'bg-stone-200 text-stone-400 cursor-not-allowed'}`}
                                 >
                                 다음단계
                                 </button>
@@ -517,7 +522,7 @@ const Features: React.FC = () => {
                                                 }
                                             }}
                                             className={`h-[50px] flex items-center justify-center snap-center transition-all duration-300 cursor-pointer ${
-                                                // Check modulo to highlight the correct member in all 3 duplicated sets
+                                                // Check modulo to highlight the correct member in all 5 duplicated sets
                                                 (i % MEMBERS.length) === wheelIndex 
                                                 ? 'font-black text-2xl text-stone-900 scale-100 opacity-100' 
                                                 : 'font-medium text-stone-400 text-lg scale-95 opacity-40'
@@ -864,7 +869,7 @@ const Features: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 2: Combined Info & Location Hub (Info -> Map -> Parking) */}
+        {/* Card 2: Combined Info & Location Hub - Height restored to prevent overlap */}
         <div id="location-card" className="order-2 md:order-1 group relative bg-[#FFFEFA]/90 backdrop-blur-md border border-stone-200 rounded-[40px] p-10 overflow-hidden hover:border-stone-300 transition-all duration-500 min-h-[640px] flex flex-col shadow-xl">
            
            {/* Stage 1: Info Details */}
