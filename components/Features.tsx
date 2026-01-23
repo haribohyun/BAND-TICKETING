@@ -22,7 +22,7 @@ const Features: React.FC = () => {
   const [isListExpanded, setIsListExpanded] = useState(false);
 
   // Progressive Form State (Toss Style)
-  const [formStep, setFormStep] = useState(0); // 0: Inputs (Name+Phone), 2: Referral (Wheel) - Skipped 1 for unified view
+  const [formStep, setFormStep] = useState(0); // 0: Name, 1: Phone, 2: Referral (Wheel)
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const phoneInputRef = useRef<HTMLInputElement>(null);
@@ -95,6 +95,11 @@ const Features: React.FC = () => {
             setTimeout(() => {
                 nameInputRef.current?.focus({ preventScroll: true });
             }, 600); // 600ms delay to ensure transition completes
+        } else if (formStep === 1) {
+            // Restore Phone Focus with preventScroll: true
+            setTimeout(() => {
+                phoneInputRef.current?.focus({ preventScroll: true });
+            }, 600);
         } else if (formStep === 2) {
              // Initialize Referral if empty
              const currentReferral = formData.referral || MEMBERS[0];
@@ -248,7 +253,7 @@ const Features: React.FC = () => {
 
   const handleNameSubmit = () => {
     if (isNameValid) {
-        phoneInputRef.current?.focus(); // Focus next input directly
+        setFormStep(1);
     }
   };
 
@@ -323,8 +328,11 @@ const Features: React.FC = () => {
       if (reserveStage === 'countSelection') {
           setReserveStage('form');
       } else if (reserveStage === 'form') {
-          // If in wheel stage (step 2), go back to inputs (step 0)
+          // If in wheel stage (step 2), go back to step 1
           if (formStep === 2) {
+              setFormStep(1);
+          } else if (formStep === 1) {
+              // If in phone stage (step 1), go back to name (step 0)
               setFormStep(0);
           } else {
               setFormData({
@@ -353,7 +361,7 @@ const Features: React.FC = () => {
             <div className="flex-1 pr-4">
                 <h3 className="text-2xl font-bold text-stone-900 mb-1">
                     {reserveStage === 'intro' ? '티켓 예매' : 
-                     reserveStage === 'form' ? (formStep === 2 ? '지인 선택' : '정보를 알려주세요') :
+                     reserveStage === 'form' ? (formStep === 2 ? '지인 선택' : '반가워요👋') :
                      reserveStage === 'countSelection' ? '몇 장을 예매할까요?' :
                      reserveStage === 'confirm' ? '입력한 정보가 맞나요?' :
                      reserveStage === 'success' ? '거의 다 됐어요!' :
@@ -364,7 +372,7 @@ const Features: React.FC = () => {
                 </h3>
                 <p className={`text-sm font-medium transition-colors duration-300 text-[#1A1A1A]/60`}>
                     {reserveStage === 'intro' ? '2026.02.14 SAT | 적옥춘 VOL.2' :
-                     reserveStage === 'form' ? (formStep === 2 ? '멤버를 선택해주세요.' : '입금 확인을 위해 꼭 필요한 정보예요.') :
+                     reserveStage === 'form' ? (formStep === 2 ? '멤버를 선택해주세요.' : '입금 확인을 위해 정보를 알려주세요.') :
                      reserveStage === 'countSelection' ? '예매하실 티켓 수량을 선택해주세요.' :
                      reserveStage === 'confirm' ? '마지막으로 한 번 더 확인해 주세요.' :
                      reserveStage === 'success' ? '아래 계좌로 입금하면 예매가 끝나요.' :
@@ -434,58 +442,65 @@ const Features: React.FC = () => {
                 >
                     {/* Slide 1: Inputs */}
                     <div className="w-1/2 px-1 flex flex-col h-full overflow-y-auto custom-scrollbar">
-                         <div className="flex flex-col gap-6 flex-1">
+                         <div className="flex flex-col gap-8 flex-1">
                             {/* 1. Name Input */}
-                            <div className="space-y-1.5 transition-all duration-500">
-                                <label className="text-xs font-semibold text-stone-500">
-                                    예매자 성함
-                                </label>
-                                <input 
-                                    ref={nameInputRef}
-                                    type="text" 
-                                    placeholder="홍길동" 
-                                    value={formData.name} 
-                                    onChange={(e) => handleInputChange('name', e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && isNameValid) handleNameSubmit();
-                                    }}
-                                    enterKeyHint="next"
-                                    className={`w-full bg-stone-50 border rounded-xl px-4 py-4 text-sm text-stone-900 focus:outline-none placeholder-stone-400 ${formData.name && !isNameValid ? 'border-red-400' : 'border-stone-200'}`} 
-                                />
-                                {formData.name && !isNameValid && formStep === 0 && (
-                                    <p className="text-xs text-red-500 font-medium pl-1 mt-1">한글 성함만 입력 가능합니다</p>
-                                )}
-                            </div>
+                            {formStep === 0 && (
+                                <div 
+                                    className="animate-fade-in-up"
+                                >
+                                    <label className="text-sm font-bold text-stone-900 flex items-center gap-2 mb-2">
+                                        입금자 성함
+                                    </label>
+                                    <input 
+                                        ref={nameInputRef}
+                                        type="text" 
+                                        placeholder="이름을 입력해주세요" 
+                                        value={formData.name} 
+                                        onChange={(e) => handleInputChange('name', e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && isNameValid) handleNameSubmit();
+                                        }}
+                                        enterKeyHint="next"
+                                        className={`w-full bg-transparent border-b-2 ${formData.name && !isNameValid ? 'border-red-400' : (formStep > 0 ? 'border-stone-200' : 'border-stone-900')} py-4 text-2xl font-bold text-stone-900 focus:outline-none focus:border-stone-900 transition-all placeholder-stone-300 rounded-none`} 
+                                    />
+                                    {formData.name && !isNameValid && (
+                                        <p className="text-xs text-red-500 font-medium pl-1 mt-2">한글 성함만 입력 가능합니다</p>
+                                    )}
+                                </div>
+                            )}
 
-                            {/* 2. Phone Input - Always Visible */}
-                            <div className="space-y-1.5 transition-all duration-500">
-                                <label className="text-xs font-semibold text-stone-500">
-                                    연락처 뒷번호 4자리
-                                </label>
-                                <input 
-                                    ref={phoneInputRef}
-                                    type="tel" 
-                                    maxLength={4} 
-                                    placeholder="1234" 
-                                    value={formData.phone} 
-                                    onChange={(e) => handleInputChange('phone', e.target.value.replace(/[^0-9]/g, ''))} 
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && isPhoneValid) handlePhoneSubmit();
-                                    }}
-                                    enterKeyHint="next"
-                                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-4 text-sm text-stone-900 tracking-widest focus:outline-none placeholder-stone-400" 
-                                    
-                                />
-                            </div>
+                            {/* 2. Phone Input */}
+                            {formStep === 1 && (
+                                <div 
+                                    className="animate-fade-in-up"
+                                >
+                                    <label className="text-sm font-bold text-stone-900 flex items-center gap-2 mb-2">
+                                        연락처 뒷번호 4자리
+                                    </label>
+                                    <input 
+                                        ref={phoneInputRef}
+                                        type="tel" 
+                                        maxLength={4} 
+                                        placeholder="1234" 
+                                        value={formData.phone} 
+                                        onChange={(e) => handleInputChange('phone', e.target.value.replace(/[^0-9]/g, ''))} 
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && isPhoneValid) handlePhoneSubmit();
+                                        }}
+                                        enterKeyHint="done"
+                                        className="w-full bg-transparent border-b-2 border-stone-900 py-4 text-3xl font-bold text-stone-900 tracking-[0.5em] focus:outline-none focus:border-stone-900 placeholder-stone-300 rounded-none" 
+                                    />
+                                </div>
+                            )}
                          </div>
                          
-                         {/* Next Button for Slide 1 - Always visible in this step */}
-                         {formStep < 2 && (
+                         {/* Next Button for Slide 1 - Name & Phone Steps */}
+                         {formStep <= 1 && (
                             <div className="mt-8 w-full bg-[#FFFEFA]/95 pt-4">
                                 <button 
-                                    disabled={!(isNameValid && isPhoneValid) || isSubmitting} 
-                                    onClick={() => setFormStep(2)} 
-                                    className={`w-full py-4 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg ${(isNameValid && isPhoneValid) && !isSubmitting ? 'bg-stone-900 text-[#F7F5F0] hover:bg-stone-800 active:scale-[0.98]' : 'bg-stone-200 text-stone-400 cursor-not-allowed'}`}
+                                    disabled={(formStep === 0 ? !isNameValid : !isPhoneValid) || isSubmitting} 
+                                    onClick={() => formStep === 0 ? setFormStep(1) : setFormStep(2)} 
+                                    className={`w-full py-4 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg ${((formStep === 0 ? isNameValid : isPhoneValid) && !isSubmitting) ? 'bg-stone-900 text-[#F7F5F0] hover:bg-stone-800 active:scale-[0.98]' : 'bg-stone-200 text-stone-400 cursor-not-allowed'}`}
                                 >
                                 다음단계
                                 </button>
@@ -816,7 +831,7 @@ const Features: React.FC = () => {
                         
                         <div className="flex flex-col items-center gap-1 shrink-0 mb-2">
                              <h4 className="text-sm font-bold tracking-widest text-[#1A1A1A]/60 uppercase">
-                                2026.02.14 SAT | 적옥춘 VOL.2
+                                적옥춘 VOL.2
                             </h4>
                             <h4 className="text-sm font-bold tracking-widest text-[#1A1A1A]/60 uppercase flex gap-3">
                                 <span>{lookupResult.name}</span>
@@ -827,7 +842,7 @@ const Features: React.FC = () => {
                         
                         <div className="text-center shrink-0">
                             <p className="text-xs text-stone-400 font-medium bg-stone-100 px-4 py-2 rounded-full">
-                                본 페이지를 캡쳐하여 당일 현장 관계자에게 보여주세요
+                                본 화면을 캡쳐하여 공연 당일 관계자에게 보여주세요
                             </p>
                         </div>
                     </>
